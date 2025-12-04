@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<BorderPane prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="VideoScramblerController">
+    <bottom>
+        <VBox alignment="CENTER" spacing="10">
+            <padding>
+                <Insets bottom="15" left="15" right="15" top="15" />
+            </padding>
+            <Separator />
+            <HBox alignment="CENTER" spacing="20">
+                <Button fx:id="button" onAction="#startCamera" text="Démarrer Caméra" />
+
+                <Label text="Clé R (0-255):" />
+                <TextField fx:id="rField" prefWidth="60" text="10" />
+
+                <Label text="Clé S (0-127):" />
+                <TextField fx:id="sField" prefWidth="60" text="5" />
+
+                <CheckBox fx:id="chkDescramble" text="Mode Déchiffrement" />
+            </HBox>
+            <Label text="Modifiez R et S pour voir l'effet en temps réel." textFill="gray">
+                <font>
+                    <Font size="10.0" />
+                </font>
+            </Label>
+        </VBox>
+    </bottom>
+
+    <center>
+        <HBox alignment="CENTER" spacing="20">
+            <VBox alignment="CENTER">
+                <Label text="Original (Webcam)">
+                    <font>
+                        <Font size="14.0" />
+                    </font>
+                </Label>
+                <ImageView fx:id="originalFrame" fitWidth="480" preserveRatio="true" />
+            </VBox>
+
+            <Separator orientation="VERTICAL" />
+
+            <VBox alignment="CENTER">
+                <Label text="Traité (Scramble/Unscramble)">
+                    <font>
+                        <Font size="14.0" />
+                    </font>
+                </Label>
+                <ImageView fx:id="processedFrame" fitWidth="480" preserveRatio="true" />
+            </VBox>
+        </HBox>
+    </center>
+</BorderPane>
