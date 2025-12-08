@@ -26,5 +26,14 @@ bin/
 ### VS Code ###
 .vscode/
 
-### Mac OS ###
+# Fichiers et dossiers d'IntelliJ IDEA
+.idea/
+*.iml
+
+# Dépendances natives OpenCV (peuvent varier)
+*.dll
+*.so
+*.jnilib
+
+# Fichiers MacOS
 .DS_Store
