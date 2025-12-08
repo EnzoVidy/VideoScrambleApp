@@ -20,6 +20,7 @@ import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
 
 import org.opencv.core.Mat;
+import org.opencv.core.Size;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
@@ -92,9 +93,10 @@ public class VideoScramblerController {
             int fourcc = VideoWriter.fourcc('M', 'J', 'P', 'G');
             double fps = capture.get(Videoio.CAP_PROP_FPS);
             if(fps <= 0) fps = 30.0;
-            org.opencv.core.Size frameSize = new org.opencv.core.Size(
+            Size frameSize = new Size(
                     (int) capture.get(Videoio.CAP_PROP_FRAME_WIDTH),
-                    (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT));
+                    (int) capture.get(Videoio.CAP_PROP_FRAME_HEIGHT)
+            );
 
             this.writer = new VideoWriter(outputFilename, fourcc, fps, frameSize, true);
             this.isRecording = writer.isOpened();
@@ -136,15 +138,13 @@ public class VideoScramblerController {
             int s = Integer.parseInt(txtS.getText());
 
             if (btnScramble.isSelected()) {
-                // Mode Chiffrement : On mélange
+                // Mode Chiffrement
                 return VideoScrambler.processImage(input, r, s, false);
             } else if (btnUnscramble.isSelected()) {
-                // Mode Déchiffrement : On démélange
+                // Mode Déchiffrement
                 return VideoScrambler.processImage(input, r, s, true);
             }
-        } catch (NumberFormatException e) {
-            // Clés invalides, on renvoie l'original
-        }
+        } catch (NumberFormatException e) {}
         // Si aucun mode sélectionné, on renvoie une copie de l'original
         return input.clone();
     }

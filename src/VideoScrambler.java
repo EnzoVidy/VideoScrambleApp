@@ -127,6 +127,7 @@ public class VideoScrambler {
     public static int[] crackKey(Mat scrambledImage) {
         // Optimisation : Travailler sur une image réduite pour aller plus vite
         Mat small = new Mat();
+        Imgproc.cvtColor(scrambledImage, scrambledImage, Imgproc.COLOR_BGR2GRAY);
         Imgproc.resize(scrambledImage, small, new Size(640, 360)); // Taille arbitraire plus petite
 
         int height = small.height();
