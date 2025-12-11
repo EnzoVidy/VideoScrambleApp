@@ -156,6 +156,7 @@ public class VideoScramblerController {
         // Si vous chargez une vidéo chiffrée, 'originalFrame' contient l'image mélangée.
 
         if (this.capture.isOpened()) {
+            capture.set(Videoio.CAP_PROP_POS_FRAMES, (int)(capture.get(Videoio.CAP_PROP_FRAME_COUNT)*0.25));
             Mat frame = new Mat();
             this.capture.read(frame); // Lecture d'une frame à la volée
 

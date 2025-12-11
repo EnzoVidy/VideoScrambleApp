@@ -88,7 +88,7 @@ public class VideoScrambler {
      */
     public static Mat processImage(Mat src, int r, int s, boolean reverse) {
         int height = src.height();
-        int width = src.width();
+        // int width = src.width();
         Mat dst = new Mat(src.size(), src.type());
 
         // Récupérer la map (si reverse=true, getPermutationMap renvoie déjà l'inverse)
@@ -100,17 +100,19 @@ public class VideoScrambler {
             int sourceRowIndex = reverse ? map[i] : i;
             int destRowIndex = reverse ? i : map[i];
 
-            // Si reverse est true (déchiffrement), map[i] contient l'origine de la ligne i
-            // Si reverse est false (chiffrement), map[i] contient la destination de la ligne i
+            /*
+             Si reverse est true (déchiffrement), map[i] contient l'origine de la ligne i
+             Si reverse est false (chiffrement), map[i] contient la destination de la ligne i
 
-            // Approche simplifiée :
-            // Map contient : pour la ligne i de l'image 'src', elle va à la ligne map[i] de 'dst'
-            // SAUF que getPermutationMap avec inverse=true inverse la logique.
+             Approche simplifiée :
+             Map contient : pour la ligne i de l'image 'src', elle va à la ligne map[i] de 'dst'
+             SAUF que getPermutationMap avec inverse=true inverse la logique.
 
-            // Utilisons une logique unifiée :
-            // dst.row(i) = src.row(source_qui_va_en_i)
-            // C'est plus simple de le voir comme :
-            // chiffrer : dst.row(map[i]) = src.row(i)
+             Utilisons une logique unifiée :
+             dst.row(i) = src.row(source_qui_va_en_i)
+             C'est plus simple de le voir comme :
+             chiffrer : dst.row(map[i]) = src.row(i)
+            */
 
             Mat srcRow = src.row(i);
             Mat dstRow = dst.row(map[i]);
@@ -127,11 +129,10 @@ public class VideoScrambler {
     public static int[] crackKey(Mat scrambledImage) {
         // Optimisation : Travailler sur une image réduite pour aller plus vite
         Mat small = new Mat();
-        Imgproc.cvtColor(scrambledImage, scrambledImage, Imgproc.COLOR_BGR2GRAY);
         Imgproc.resize(scrambledImage, small, new Size(640, 360)); // Taille arbitraire plus petite
 
         int height = small.height();
-        int width = small.width();
+        // int width = small.width();
 
         double bestScore = Double.MAX_VALUE;
         int bestR = 0;
@@ -150,8 +151,9 @@ public class VideoScrambler {
                 // Calcul du score sans reconstruire l'image Mat :
                 // On compare la ligne invMap[i] (qui est la ligne i déchiffrée)
                 // avec la ligne invMap[i+1] (ligne i+1 déchiffrée) de l'image brouillée source.
-                double currentScore = calculateEuclideanScore(small, invMap);
-
+                //double currentScore = calculateEuclideanScore(small, invMap);
+                double currentScore = calculatePearsonScore(small, invMap);
+                System.out.println("Score : " + bestScore + " R=" + bestR + ", S=" + bestS);
                 if (currentScore < bestScore) {
                     bestScore = currentScore;
                     bestR = r;
@@ -173,21 +175,22 @@ public class VideoScrambler {
         int h = img.height();
         int w = img.width();
         int channels = img.channels(); // 3 pour BGR
+        /*
+         Pour aller très vite, on ne check pas tous les pixels, ou on prend un pas
+         Ici on fait une implémentation simple mais complète sur la largeur
+         Accès direct aux pixels est lent en Java OpenCV via get().
+         Idéalement on convertit en byte[] avant la boucle for, mais img change peu.
 
-        // Pour aller très vite, on ne check pas tous les pixels, ou on prend un pas
-        // Ici on fait une implémentation simple mais complète sur la largeur
-        // Accès direct aux pixels est lent en Java OpenCV via get().
-        // Idéalement on convertit en byte[] avant la boucle for, mais img change peu.
+         Optimisation : on prend juste une colonne centrale et deux latérales
+         ou on charge tout en byte array une fois.
 
-        // Optimisation : on prend juste une colonne centrale et deux latérales
-        // ou on charge tout en byte array une fois.
+         Pour l'exercice, on va supposer qu'on a converti l'image en buffer avant l'appel
+         Mais comme l'appelant est crackKey, faisons-le ici ou optimisons.
+         On va utiliser un échantillonnage (ex: colonne du milieu) pour la rapidité
 
-        // Pour l'exercice, on va supposer qu'on a converti l'image en buffer avant l'appel
-        // Mais comme l'appelant est crackKey, faisons-le ici ou optimisons.
-        // On va utiliser un échantillonnage (ex: colonne du milieu) pour la rapidité
-
-        // TEST RAPIDE : Comparer seulement la colonne du milieu (width/2)
-        // C'est souvent suffisant pour voir la continuité.
+         TEST RAPIDE : Comparer seulement la colonne du milieu (width/2)
+         C'est souvent suffisant pour voir la continuité.
+        */
 
         byte[] b1 = new byte[channels];
         byte[] b2 = new byte[channels];
@@ -212,5 +215,75 @@ public class VideoScrambler {
         }
 
         return totalDist;
+    }
+
+    private static double calculatePearsonScore(Mat img, int[] invMap) {
+        int h = img.rows();
+        int w = img.cols();
+        int channels = img.channels();
+
+        // On peut prendre une colonne centrale comme dans ton code
+        int col = w / 2;
+
+        byte[] b1 = new byte[channels];
+        byte[] b2 = new byte[channels];
+
+        double totalScore = 0.0;
+
+        for (int i = 0; i < h - 1; i++) {
+
+            int rowA = invMap[i];
+            int rowB = invMap[i + 1];
+
+            img.get(rowA, col, b1);
+            img.get(rowB, col, b2);
+
+            // --- Convertir en valeurs 0–255
+            double[] A = new double[channels];
+            double[] B = new double[channels];
+
+            for (int c = 0; c < channels; c++) {
+                A[c] = (b1[c] & 0xFF);
+                B[c] = (b2[c] & 0xFF);
+            }
+
+            // --- Calcul Pearson
+            double score = pearsonCost(A, B);
+            totalScore += score;
+        }
+
+        return totalScore;
+    }
+
+    private static double pearsonCost(double[] A, double[] B) {
+        int n = A.length;
+
+        double sumA = 0, sumB = 0;
+        double sumAB = 0, sumA2 = 0, sumB2 = 0;
+
+        for (int i = 0; i < n; i++) {
+            sumA += A[i];
+            sumB += B[i];
+            sumAB += A[i] * B[i];
+            sumA2 += A[i] * A[i];
+            sumB2 += B[i] * B[i];
+        }
+
+        double meanA = sumA / n;
+        double meanB = sumB / n;
+
+        double cov = sumAB - n * meanA * meanB;
+        double varA = sumA2 - n * meanA * meanA;
+        double varB = sumB2 - n * meanB * meanB;
+
+        double denom = Math.sqrt(varA * varB);
+
+        if (denom == 0)
+            return 1.0; // maximally bad, no information
+
+        double r = cov / denom;
+
+        // On retourne un score à minimiser
+        return 1.0 - r;
     }
 }
