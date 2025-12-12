@@ -24,6 +24,13 @@ import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.VideoWriter;
 import org.opencv.videoio.Videoio;
 
+
+/**
+ * The controller for our application, where the application logic is
+ * implemented. It handles the button for starting/stopping the camera and the
+ * acquired video stream.
+ *
+ */
 public class VideoScramblerController {
 
     @FXML private Button btnCamera;
@@ -51,6 +58,12 @@ public class VideoScramblerController {
         btnUnscramble.setToggleGroup(modeGroup);
     }
 
+    /**
+     * The action triggered by pushing the button on the GUI
+     *
+     * @param event
+     *            the push button event
+     */
     @FXML
     protected void startCamera(ActionEvent event) {
         if (!this.cameraActive) {
@@ -127,6 +140,9 @@ public class VideoScramblerController {
 
             this.timer = Executors.newSingleThreadScheduledExecutor();
             this.timer.scheduleAtFixedRate(frameGrabber, 0, 33, TimeUnit.MILLISECONDS);
+        } else {
+            // log the error
+            System.err.println("Impossible to open the camera connection...");
         }
     }
 
@@ -179,28 +195,43 @@ public class VideoScramblerController {
         }
     }
 
+    /**
+     * Get a frame from the opened video stream (if any)
+     *
+     * @return the {@link Mat} to show
+     */
     private Mat grabFrame() {
+        // init everything
         Mat frame = new Mat();
+        // check if the capture is open
         if (this.capture.isOpened()) {
             try {
+                // read the current frame
                 this.capture.read(frame);
             } catch (Exception e) {
-                System.err.println("Exception during capture: " + e);
+                // log the error
+                System.err.println("Exception during the image elaboration: " + e);
             }
         }
         return frame;
     }
 
+    /**
+     * Stop the acquisition from the camera and release all the resources
+     */
     private void stopAcquisition() {
         if (this.timer != null && !this.timer.isShutdown()) {
             try {
+                // stop the timer
                 this.timer.shutdown();
                 this.timer.awaitTermination(33, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                System.err.println("Exception in stopping timer: " + e);
+                // log any exception
+                System.err.println("Exception in stopping the frame capture, trying to release the camera now... " + e);
             }
         }
         if (this.capture.isOpened()) {
+            // release the camera
             this.capture.release();
         }
         if (this.writer != null && this.writer.isOpened()) {
@@ -209,26 +240,61 @@ public class VideoScramblerController {
         this.cameraActive = false;
     }
 
+    /**
+     * On application close, stop the acquisition from the camera
+     */
     public void setClosed() {
         this.stopAcquisition();
     }
 
+    /**
+     * Update the {@link ImageView} in the JavaFX main thread
+     *
+     * @param view
+     *            the {@link ImageView} to update
+     * @param image
+     *            the {@link Image} to show
+     */
     private void updateImageView(ImageView view, Image image) {
         onFXThread(view.imageProperty(), image);
     }
 
+    /**
+     * Generic method for putting element running on a non-JavaFX thread on the
+     * JavaFX thread, to properly update the UI
+     *
+     * @param property
+     *            a {@link ObjectProperty}
+     * @param value
+     *            the value to set for the given {@link ObjectProperty}
+     */
     public static <T> void onFXThread(final ObjectProperty<T> property, final T value) {
         Platform.runLater(() -> property.set(value));
     }
 
+    /**
+     * Convert a Mat object (OpenCV) in the corresponding Image for JavaFX
+     *
+     * @param frame
+     *            the {@link Mat} representing the current frame
+     * @return the {@link Image} to show
+     */
     public static Image mat2Image(Mat frame) {
         try {
             return SwingFXUtils.toFXImage(matToBufferedImage(frame), null);
         } catch (Exception e) {
+            System.err.println("Cannot convert the Mat obejct: " + e);
             return null;
         }
     }
 
+    /**
+     * Support for the {@link mat2image()} method
+     *
+     * @param original
+     *            the {@link Mat} object in BGR or grayscale
+     * @return the corresponding {@link BufferedImage}
+     */
     private static BufferedImage matToBufferedImage(Mat original) {
         if(original.empty()) return null;
         BufferedImage image = null;

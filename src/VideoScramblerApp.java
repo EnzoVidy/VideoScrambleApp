@@ -21,7 +21,7 @@ public class VideoScramblerApp extends Application {
             // Fenêtre un peu plus large pour accueillir les deux vidéos
             Scene scene = new Scene(rootElement, 1100, 700);
 
-            primaryStage.setTitle("Projet VideoScramble - Etape 1 & 2");
+            primaryStage.setTitle("Projet VideoScramble");
             primaryStage.setScene(scene);
             primaryStage.show();
 
